@@ -54,10 +54,9 @@ INSERT INTO prescriptions (prescription_date, dosage_instruction, patient_id, do
 -- Insérez un nouveau patient nommé "Alex Johnson", né le 15 juillet 1990, de sexe masculin, avec le numéro de téléphone "1234567890".
 
 INSERT INTO patients (first_name,last_name,gender,date_of_birth,phone_number,email,adress) 
-VALUES("Alex","Johnson","Male","2000-03-12","1234567890","Alex@gmail.com","youssoufia"),
+VALUES("Alex","Johnson","Male","1990-07-15","1234567890","Alex@gmail.com","youssoufia"),
 
 -- 2. SELECT Statement : Récupérer tous les départements:
-
 -- Récupérez tous les départements avec leurs emplacements.
 
 SELECT * from departements
@@ -87,8 +86,10 @@ SELECT * FROM admissions WHERE admission_date BETWEEN '2024-12-01' AND '2024-12-
 
 -- 9. Conditional Expressions : Nommer les catégories d'âge des patients Ajoutez une colonne catégorisant les patients en "Enfant", "Adulte", ou "Senior" selon leur âge.
 
-SELECT first_name, last_name, date_of_birth , CASE WHEN TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) < 18 THEN 'Child'
-           WHEN TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) BETWEEN 18 AND 64 THEN 'Adult'
+SELECT first_name, last_name, date_of_birth ,
+           CASE 
+              WHEN TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) < 18 THEN 'Child'
+              WHEN TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) BETWEEN 18 AND 64 THEN 'Adult'
            ELSE 'Senior' END AS age_category FROM patients;
 
 -- 10. Aggregate Functions : Nombre total de rendez-vous Comptez le nombre total de rendez-vous enregistrés. 
@@ -97,7 +98,7 @@ SELECT COUNT(*) AS total_appointments FROM appointements;
 
 -- 11. COUNT avec GROUP BY : Nombre de médecins par département Comptez le nombre de médecins dans chaque département.
 
-SELECT d.departement_name, COUNT(*) AS number_of_doctors FROM doctors d JOIN departements dp ON d.departement_id = dp.id GROUP BY d.departement_id;
+SELECT dp.departement_name, COUNT(*) AS number_of_doctors FROM doctors d JOIN departements dp ON d.departement_id = dp.departement_id GROUP BY d.departement_id;
 
 -- 12. AVG : Âge moyen des patients Calculez l'âge moyen des patients.
 
@@ -111,6 +112,7 @@ SELECT MAX(appointement_date) AS latest_appointment_date FROM appointements;
 
 SELECT room_id, COUNT(*) AS total_admissions FROM admissions GROUP BY room_id;
 
+
 -- 15. Constraints : Vérifier les patients sans e-mail Récupérez tous les patients dont le champ email est vide.
 
 SELECT * FROM patients WHERE email IS NULL ;
@@ -118,7 +120,7 @@ SELECT * FROM patients WHERE email IS NULL ;
 -- 16. Jointure : Liste des rendez-vous avec noms des médecins et patients Récupérez les rendez-vous avec les noms des médecins et des patients.
 
 SELECT a.appointement_date, a.appointement_time, a.reason,p.first_name AS patient_first_name, p.last_name AS patient_last_name,d.first_name AS doctor_first_name, d.last_name AS doctor_last_name
-FROM appointements a JOIN patients p ON a.patient_id = p.id JOIN doctors d ON a.doctor_id = d.id;
+FROM appointements a JOIN patients p ON a.patient_id = p.patient_id JOIN doctors d ON a.doctor_id = d.doctor_id;
 
 -- 17. DELETE : Supprimer les rendez-vous avant 2024 Supprimez tous les rendez-vous programmés avant 2024.
 
@@ -136,3 +138,34 @@ SELECT gender, COUNT(*) AS number_of_patients FROM patients GROUP BY gender HAVI
 
 CREATE VIEW active_admissions AS
 SELECT * FROM admissions WHERE discharge_date IS NULL OR discharge_date > CURDATE();
+
+
+-- bonus
+
+
+--Bonus 1 : Patients et leurs médecins traitants Récupérez les noms des patients et les noms de 
+--leurs médecins traitants à partir des tables patients, admissions, et doctors.
+
+select p.last_name AS patient_last_name,d.last_name AS doctor_last_name FROM patients p JOIN prescriptions pr on 
+p.patient_id= pr.patient_id JOIN doctors d ON pr.doctor_id=d.doctor_id;
+--Bonus 2 : Liste des rendez-vous par département Récupérez la liste des rendez-vous avec les départements associés.
+
+SELECT a.appointement_id,a.appointement_date,a.appointement_time,a.reason,dt.last_name,d.departement_id,d.departement_name,d.location FROM 
+appointements a JOIN doctors dt on a.doctor_id = dt.doctor_id JOIN departements d on dt.departement_id = d.departement_id GROUP BY departement_id;
+
+--Bonus 3 : Médicaments prescrits par médecin Listez les médicaments prescrits par 
+--chaque médecin.
+
+SELECT md.medication_name,md.dosage,pr.prescription_date,pr.dosage_instruction,d.first_name,d.last_name,d.specialization 
+FROM medications md JOIN prescriptions pr ON md.medication_id=pr.medication_id 
+JOIN doctors d on d.doctor_id=pr.doctor_id;
+
+--Bonus 4 : Admissions et leurs chambres associées Récupérez les informations 
+--des admissions et des chambres où les patients sont placés.
+
+SELECT concat(pt.first_name,pt.last_name) AS full_Name,ad.admission_date,ad.discharge_date,rm.room_number,rm.room_type 
+FROM admissions ad JOIN rooms rm ON ad.room_id=rm.room_id 
+JOIN patients pt ON ad.patient_id = pt.patient_id;
+
+
+
